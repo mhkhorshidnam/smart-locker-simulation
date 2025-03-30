@@ -9,11 +9,12 @@ from datetime import datetime, timezone
 DEVICE_ID = "1804030000F00000"
 IMEI = "860384067029857"
 ICCID = "89981129000715130234"
-API_URL = f"https://connectedcars.ir/platform/api/device/aes+YT@NlxJtq_@)/telemetry"
+API_URL = "http://connectedcars.ir/platform/api/device/aes+YT@NlxJtq_@)/telemetry"
 
 HEADERS = {
     "Content-Type": "application/json",
-    "Accept": "application/json"
+    "Accept": "application/json",
+    "Connection": "keep-alive"
 }
 
 MAX_RETRIES = 3
