@@ -3,20 +3,32 @@ import time
 import requests
 
 # Constants
-API_URL = "http://connectedcars.ir/platform/api/device/aes+YT@NlxJtq_@)/telemetry"
-HEADERS = {"Content-Type": "application/json"}
+from urllib.parse import quote
+
+device_id = "aes+YT@NlxJtq_@)"
+encoded_device_id = quote(device_id)
+API_URL = f"http://connectedcars.ir/platform/api/device/{encoded_device_id}/telemetry"
+HEADERS = {
+    "Content-Type": "application/json",
+    "Accept": "application/json"
+}
+
 PROVINCES = {
-    "Province1": "data1",
-    "Province2": "data2",
-    "Province3": "data3"
+    "Province1": {"latitude": 35.6892, "longitude": 51.3890},  # Tehran
+    "Province2": {"latitude": 32.6539, "longitude": 51.6660},  # Isfahan
+    "Province3": {"latitude": 29.5926, "longitude": 52.5836}   # Shiraz
 }
 
 def generate_data(province, step):
-    # Add your data generation logic here
+    province_data = PROVINCES[province]
     return {
-        "province": province,
-        "step": step,
-        "timestamp": time.time()
+        "deviceId": device_id,
+        "location": {
+            "lat": province_data["latitude"],
+            "lng": province_data["longitude"]
+        },
+        "speed": 60 + (step % 20),  # Simulated speed between 60-80 km/h
+        "timestamp": int(time.time() * 1000)  # Millisecond timestamp
     }
 
 # Initialize variables
