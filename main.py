@@ -28,8 +28,12 @@ while True:
     print(f"Sending data from: {current_province}...")
 
     try:
-        response = requests.post(API_URL, json=data, headers=HEADERS)
+        response = requests.post(API_URL, json=data, headers=HEADERS, timeout=5)
         print(f"Status: {response.status_code} | Response: {response.text}")
+    except requests.Timeout:
+        print("Request timed out - API server took too long to respond")
+    except requests.ConnectionError:
+        print("Connection error - Could not connect to the API server")
     except Exception as e:
         print(f"Error: {e}")
 
