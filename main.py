@@ -9,12 +9,15 @@ from datetime import datetime, timezone
 DEVICE_ID = "1804030000F00000"
 IMEI = "860384067029857"
 ICCID = "89981129000715130234"
-API_URL = f"http://connectedcars.ir/platform/api/device/aes+YT@NlxJtq_@)/telemetry"
+API_URL = f"https://connectedcars.ir/platform/api/device/aes+YT@NlxJtq_@)/telemetry"
 
 HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json"
 }
+
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
 
 def generate_position_data():
     return {
@@ -134,13 +137,20 @@ def send_data():
             print(f"\nSending {data['Header']['MsgType']} data...")
             print(json.dumps(data, indent=2))
             
-            try:
-                response = requests.post(API_URL, json=data, headers=HEADERS, timeout=10)
-                print(f"Response status: {response.status_code}")
-                if response.status_code != 200:
+            for attempt in range(MAX_RETRIES):
+                try:
+                    response = requests.post(API_URL, json=data, headers=HEADERS, timeout=10)
+                    print(f"Response status: {response.status_code}")
+                    if response.status_code == 200:
+                        break
                     print(f"Error response: {response.text}")
-            except Exception as e:
-                print(f"Error sending data: {str(e)}")
+                except requests.exceptions.RequestException as e:
+                    print(f"Attempt {attempt + 1}/{MAX_RETRIES} failed: {str(e)}")
+                    if attempt < MAX_RETRIES - 1:
+                        print(f"Retrying in {RETRY_DELAY} seconds...")
+                        time.sleep(RETRY_DELAY)
+                    else:
+                        print("Max retries reached. Moving to next data point.")
             
             time.sleep(5)  # Wait 5 seconds between different message types
 
