@@ -1,0 +1,24 @@
+{
+    " Header ": {
+        " DeviceID ": " 1804030000F00000 ",
+        " IMEI ": " 860384067029857 ",
+        " ICCID ": " 89981129000715130234 ",
+        " MsgType ": " POS "
+    },
+    " Data ": {
+        " NumberOfPoint ": " 1 ",
+        " POS ": {
+            " @ sequence ": " 0 ",
+            " MessageContent ": " MjFENzdERTMwRTdDRjU2MEY3QkIwMkQ2 ",
+            " DateTime ": " 2024 - 08 - 01T15: 44: 12 ",
+            " Lat ": " 35.8094368 ",
+            " Long ": " 51.4685669 ",
+            " ALT ": " 1678 ",
+            " SPD ": " 0 ",
+            " COG ": " 72 ",
+            " NoSat ": " 10 ",
+            " LatHemisphere ": " Northern ",
+            " LongHemisphere ": " Eastern "
+        }
+    }
+}

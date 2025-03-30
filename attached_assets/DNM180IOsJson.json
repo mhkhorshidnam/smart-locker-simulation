@@ -1,0 +1,35 @@
+{
+    "Header": {
+        "DeviceID": "1804030000F00000",
+        "IMEI": "860384067029857",
+        "ICCID": "89981129000715130234",
+        "MsgType": "IOs"
+    },
+    "Data": {
+        "NumberOfIO": "3",
+        "IOTransaction": [{
+                "@IOSequence": "Engine_Speed",
+                "Type": "CAN",
+                "CurrentValue": {
+                    "AnalogValue": "736"
+                },
+                "SampleDate": "2024-08-01T15:44:12Z"
+            }, {
+                "@IOSequence": "Engine_Coolant_Temperatur",
+                "Type": "CAN",
+                "CurrentValue": {
+                    "AnalogValue": "-12"
+                },
+                "SampleDate": "2024-08-01T15:44:12Z"
+            }, {
+                "@IOSequence": "Engine_Oil_Temperatur",
+                "Type": "CAN",
+                "CurrentValue": {
+                    "AnalogValue": "86"
+                },
+                "SampleDate": "2024-08-01T15:44:12Z"
+            }
+        ],
+        "MsgContent": "IzAwMTAwMDAwMkUwIzAwMkZGRkZGRkY0IzAwMzAwMDAwMDU2"
+    }
+}
