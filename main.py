@@ -228,7 +228,7 @@ def send_data():
                     else:
                         print("Max retries reached. Moving to next data point.")
             
-            time.sleep(5)  # Wait 5 seconds between different message types
+            time.sleep(45)  # Wait 45 seconds between different message types
 
 if __name__ == "__main__":
     try:
