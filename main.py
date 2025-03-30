@@ -3,7 +3,7 @@ import time
 import requests
 
 # Constants
-API_URL = "YOUR_API_URL"
+API_URL = "http://connectedcars.ir/platform/api/device/aes+YT@NlxJtq_@)/telemetry"
 HEADERS = {"Content-Type": "application/json"}
 PROVINCES = {
     "Province1": "data1",
