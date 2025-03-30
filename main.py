@@ -1,59 +1,152 @@
 
 import time
 import requests
+import json
+import random
+from datetime import datetime, timezone
 
-# Constants
-from urllib.parse import quote
+# Configuration
+DEVICE_ID = "1804030000F00000"
+IMEI = "860384067029857"
+ICCID = "89981129000715130234"
+API_URL = f"http://connectedcars.ir/platform/api/device/aes+YT@NlxJtq_@)/telemetry"
 
-device_id = "aes+YT@NlxJtq_@)"
-encoded_device_id = quote(device_id)
-API_URL = f"http://connectedcars.ir/platform/api/device/{encoded_device_id}/telemetry"
 HEADERS = {
     "Content-Type": "application/json",
     "Accept": "application/json"
 }
 
-PROVINCES = {
-    "Province1": {"latitude": 35.6892, "longitude": 51.3890},  # Tehran
-    "Province2": {"latitude": 32.6539, "longitude": 51.6660},  # Isfahan
-    "Province3": {"latitude": 29.5926, "longitude": 52.5836}   # Shiraz
-}
-
-def generate_data(province, step):
-    province_data = PROVINCES[province]
+def generate_position_data():
     return {
-        "deviceId": device_id,
-        "location": {
-            "lat": province_data["latitude"],
-            "lng": province_data["longitude"]
+        "Header": {
+            "DeviceID": DEVICE_ID,
+            "IMEI": IMEI,
+            "ICCID": ICCID,
+            "MsgType": "POS"
         },
-        "speed": 60 + (step % 20),  # Simulated speed between 60-80 km/h
-        "timestamp": int(time.time() * 1000)  # Millisecond timestamp
+        "Data": {
+            "NumberOfPoint": "1",
+            "POS": {
+                "@sequence": "0",
+                "MessageContent": "MjFENzdERTMwRTdDRjU2MEY3QkIwMkQ2",
+                "DateTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"),
+                "Lat": str(35.8094368 + random.uniform(-0.1, 0.1)),
+                "Long": str(51.4685669 + random.uniform(-0.1, 0.1)),
+                "ALT": str(1678 + random.randint(-50, 50)),
+                "SPD": str(random.randint(0, 80)),
+                "COG": str(random.randint(0, 359)),
+                "NoSat": str(random.randint(6, 12)),
+                "LatHemisphere": "Northern",
+                "LongHemisphere": "Eastern"
+            }
+        }
     }
 
-# Initialize variables
-current_province = list(PROVINCES.keys())[0]
-step = 0
+def generate_event_data():
+    return {
+        "Header": {
+            "DeviceID": DEVICE_ID,
+            "IMEI": IMEI,
+            "ICCID": ICCID,
+            "MsgType": "Event"
+        },
+        "Data": {
+            "POS": {
+                "@sequence": "0",
+                "MessageContent": "NULL",
+                "DateTime": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S"),
+                "Lat": str(35.7140541 + random.uniform(-0.1, 0.1)),
+                "Long": str(51.43813 + random.uniform(-0.1, 0.1)),
+                "ALT": str(1320 + random.randint(-50, 50)),
+                "SPD": str(random.randint(0, 5)),
+                "COG": str(random.randint(0, 359)),
+                "NoSat": str(random.randint(6, 12)),
+                "LatHemisphere": "Northern",
+                "LongHemisphere": "Eastern"
+            },
+            "EventId": str(random.randint(1, 5)),
+            "GPInput": {
+                "IO": {
+                    "CAN": {
+                        "@Source": "1",
+                        "@Range": "Over",
+                        "CurrentValue": str(random.randint(2000, 3000)),
+                        "SampleDate": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    }
+                }
+            },
+            "Geofenc": {"@xsi:nil": "true"},
+            "OverSpeed": {"@xsi:nil": "true"},
+            "CallMe": {"@xsi:nil": "true"}
+        }
+    }
 
-while True:
-    data = generate_data(current_province, step)
-    print(f"Sending data from: {current_province}...")
+def generate_ios_data():
+    return {
+        "Header": {
+            "DeviceID": DEVICE_ID,
+            "IMEI": IMEI,
+            "ICCID": ICCID,
+            "MsgType": "IOs"
+        },
+        "Data": {
+            "NumberOfIO": "3",
+            "IOTransaction": [
+                {
+                    "@IOSequence": "Engine_Speed",
+                    "Type": "CAN",
+                    "CurrentValue": {
+                        "AnalogValue": str(random.randint(600, 800))
+                    },
+                    "SampleDate": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                },
+                {
+                    "@IOSequence": "Engine_Coolant_Temperatur",
+                    "Type": "CAN",
+                    "CurrentValue": {
+                        "AnalogValue": str(random.randint(-15, 95))
+                    },
+                    "SampleDate": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                },
+                {
+                    "@IOSequence": "Engine_Oil_Temperatur",
+                    "Type": "CAN",
+                    "CurrentValue": {
+                        "AnalogValue": str(random.randint(70, 110))
+                    },
+                    "SampleDate": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                }
+            ],
+            "MsgContent": "IzAwMTAwMDAwMkUwIzAwMkZGRkZGRkY0IzAwMzAwMDAwMDU2"
+        }
+    }
 
+def send_data():
+    data_generators = [
+        generate_position_data,
+        generate_event_data,
+        generate_ios_data
+    ]
+    
+    while True:
+        for generator in data_generators:
+            data = generator()
+            print(f"\nSending {data['Header']['MsgType']} data...")
+            print(json.dumps(data, indent=2))
+            
+            try:
+                response = requests.post(API_URL, json=data, headers=HEADERS, timeout=10)
+                print(f"Response status: {response.status_code}")
+                if response.status_code != 200:
+                    print(f"Error response: {response.text}")
+            except Exception as e:
+                print(f"Error sending data: {str(e)}")
+            
+            time.sleep(5)  # Wait 5 seconds between different message types
+
+if __name__ == "__main__":
     try:
-        response = requests.post(API_URL, json=data, headers=HEADERS, timeout=5)
-        print(f"Status: {response.status_code} | Response: {response.text}")
-    except requests.Timeout:
-        print("Request timed out - API server took too long to respond")
-    except requests.ConnectionError:
-        print("Connection error - Could not connect to the API server")
-    except Exception as e:
-        print(f"Error: {e}")
-
-    step += 1
-    if step % 12 == 0:
-        provinces_list = list(PROVINCES.keys())
-        current_index = provinces_list.index(current_province)
-        current_province = provinces_list[(current_index + 1) % len(provinces_list)]
-        print(f"\nMoving to: {current_province}\n")
-
-    time.sleep(10)
+        print("Starting smart lock data simulation...")
+        send_data()
+    except KeyboardInterrupt:
+        print("\nSimulation stopped by user")
