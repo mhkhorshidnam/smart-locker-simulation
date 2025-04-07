@@ -27,72 +27,73 @@ def interpolate_position(start_pos, end_pos, progress):
     return {"lat": lat, "lon": lon, "alt": alt}
 
 # Define route waypoints (lat, lon, altitude)
-ROUTES = {
-    "tehran_bandar": {
-        "name": "Tehran-Bandar Abbas",
-        "duration_days": 10,
-        "waypoints": [
-            {"lat": 35.6892, "lon": 51.3890, "alt": 1200},  # Tehran
-            {"lat": 27.1832, "lon": 56.2667, "alt": 9}      # Bandar Abbas
-        ]
-    },
-    "tehran_mazandaran": {
-        "name": "Tehran-Mazandaran",
-        "duration_days": 7,
-        "waypoints": [
-            {"lat": 35.6892, "lon": 51.3890, "alt": 1200},  # Tehran
-            {"lat": 36.5659, "lon": 53.0586, "alt": -21}    # Sari (Mazandaran)
-        ]
-    },
-    "tehran_isfahan": {
-        "name": "Tehran-Isfahan",
-        "duration_days": 5,
-        "waypoints": [
-            {"lat": 35.6892, "lon": 51.3890, "alt": 1200},  # Tehran
-            {"lat": 32.6539, "lon": 51.6660, "alt": 1574}   # Isfahan
-        ]
-    }
+# Bandar Abbas Railway Station coordinates
+BANDAR_RAILWAY = {"lat": 27.1443, "lon": 56.2504}
+GEOFENCE_RADIUS = 4  # km
+
+# Main route waypoints following asphalt roads
+ROUTE = {
+    "name": "Tehran-Bandar Abbas",
+    "duration_hours": 50,
+    "waypoints": [
+        {"lat": 35.6892, "lon": 51.3890, "alt": 1200},  # Tehran
+        {"lat": 35.3061, "lon": 51.4045, "alt": 1000},  # Qom
+        {"lat": 33.9956, "lon": 51.4482, "alt": 900},   # Kashan
+        {"lat": 32.6539, "lon": 51.6660, "alt": 1574},  # Isfahan
+        {"lat": 30.2839, "lon": 52.5918, "alt": 1500},  # Shiraz
+        {"lat": 28.9784, "lon": 53.9919, "alt": 800},   # Sirjan
+        {"lat": 27.1832, "lon": 56.2667, "alt": 9}      # Bandar Abbas
+    ]
 }
+
+def calculate_distance(pos1, pos2):
+    from math import sin, cos, sqrt, atan2, radians
+    R = 6371  # Earth's radius in km
+    lat1, lon1 = radians(float(pos1["lat"])), radians(float(pos1["lon"]))
+    lat2, lon2 = radians(float(pos2["lat"])), radians(float(pos2["lon"]))
+    
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    
+    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1-a))
+    return R * c
 
 def get_current_position():
     current_time = time.time()
+    start_time = current_time % (ROUTE["duration_hours"] * 3600)
+    progress = start_time / (ROUTE["duration_hours"] * 3600)
     
-    # Calculate total cycle duration in seconds
-    total_duration = sum(route["duration_days"] * 86400 for route in ROUTES.values())
+    # Find current segment
+    waypoints = ROUTE["waypoints"]
+    num_segments = len(waypoints) - 1
+    segment_progress = progress * num_segments
+    current_segment = int(segment_progress)
     
-    # Get current cycle progress
-    cycle_progress = (current_time % total_duration) / total_duration
+    if current_segment >= num_segments:
+        return waypoints[-1]
     
-    # Determine current route
-    current_time_in_cycle = (current_time % total_duration)
-    elapsed_time = 0
+    # Calculate position within current segment
+    segment_pos = segment_progress - current_segment
+    pos = interpolate_position(
+        waypoints[current_segment],
+        waypoints[current_segment + 1],
+        segment_pos
+    )
     
-    for route_id, route in ROUTES.items():
-        route_duration = route["duration_days"] * 86400
-        if current_time_in_cycle < elapsed_time + route_duration:
-            # We're on this route
-            route_progress = (current_time_in_cycle - elapsed_time) / route_duration
-            
-            # Handle return journey
-            going_forward = route_progress < 0.5
-            progress = route_progress * 2 if going_forward else (1 - (route_progress - 0.5) * 2)
-            
-            pos = interpolate_position(
-                route["waypoints"][0],
-                route["waypoints"][1],
-                progress
-            )
-            
-            # Add some randomness to make movement more realistic
-            pos["lat"] += random.uniform(-0.01, 0.01)
-            pos["lon"] += random.uniform(-0.01, 0.01)
-            pos["alt"] += random.randint(-20, 20)
-            
-            return pos
-            
-        elapsed_time += route_duration
+    # Add slight randomness for realism
+    pos["lat"] += random.uniform(-0.001, 0.001)
+    pos["lon"] += random.uniform(-0.001, 0.001)
+    pos["alt"] += random.randint(-5, 5)
     
-    return ROUTES["tehran_bandar"]["waypoints"][0]  # Fallback to Tehran
+    # Check if we're in railway station geofence
+    distance_to_railway = calculate_distance(pos, BANDAR_RAILWAY)
+    if distance_to_railway <= GEOFENCE_RADIUS:
+        print(f"\nALERT: Container has entered Bandar Abbas Railway Station zone!")
+        print(f"Distance to railway station: {distance_to_railway:.2f} km")
+        print("SMS notification would be sent to cargo owner")
+    
+    return pos
 
 def generate_position_data():
     pos = get_current_position()
@@ -228,7 +229,7 @@ def send_data():
                     else:
                         print("Max retries reached. Moving to next data point.")
             
-            time.sleep(45)  # Wait 45 seconds between different message types
+            time.sleep(180)  # Wait 3 minutes between different message types
 
 if __name__ == "__main__":
     try:
